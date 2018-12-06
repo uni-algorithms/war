@@ -7,7 +7,9 @@ int main() {
     assert(input);
     assert(output);
 
-    output << 0;
+    vector<int> who_what;
+    output << min_time(input, back_inserter(who_what)) << endl;
+    copy(begin(who_what), end(who_what), ostream_iterator<int>(output, "\n"));
 
     input.close();
     output.close();
