@@ -9,16 +9,18 @@ struct coordinates {
     int x, y;
 };
 
-void make_columns_great_again(vector<vector<int>> &rows, const int value) {
-    const auto n_r = rows.size();
-    const auto n_c = begin(rows)->size();
+bool make_columns_great_again(vector<vector<int>> &rows, const int value) {
+    const auto nr = rows.size();
+    const auto nc = begin(rows)->size();
 
-    if (n_c < n_r) {
-        const auto diff = n_r - n_c;
+    if (nc < nr) {
+        const auto diff = nr - nc;
         for (auto &row : rows) {
             fill_n(back_inserter(row), diff, value);
         }
     }
+
+    return nc < nr;
 }
 
 int make_positive(vector<vector<int>> &rows) {
@@ -76,7 +78,8 @@ function<int(const coordinates)> distance(const coordinates &a) {
 }
 
 template<typename OutputIteratorA, typename OutputIteratorB>
-void distances_from_stream(istream &in, unsigned long c, unsigned long s, OutputIteratorA dist_tc, OutputIteratorB dist_ssc) {
+void distances_from_stream(istream &in, unsigned long c, unsigned long s, OutputIteratorA dist_tc,
+                           OutputIteratorB dist_ssc) {
     vector<coordinates> components;
     vector<coordinates> soldiers;
 
@@ -100,13 +103,37 @@ bool between(const long &x, const long &first, const long &last) {
     return first <= x && x < last;
 }
 
-template<typename K, typename V>
-K take_first(const pair<K, V> &p) {
-    return p.first;
-}
-
 bool compare_columns(const node &a, const node &b) {
     return a.column() < b.column();
+}
+
+pair<int, int> find_min_soldier(const vector<node> &indexes, const vector<vector<int>> &adv, unsigned long c) {
+    int min_soldier = -1;
+    int min_chosen_adv = INT_MAX;
+
+    // find min_soldier
+    for (const auto &node : indexes) {
+        const auto soldier = node.row();
+        const auto component = node.column();
+
+        if (!between(component, 0, c)) continue;
+
+        const int candidate_adv = adv[soldier][component];
+
+        if (candidate_adv < min_chosen_adv) {
+            min_chosen_adv = candidate_adv;
+            min_soldier = soldier;
+        }
+    }
+
+    return {min_soldier, min_chosen_adv};
+}
+
+// a soldier is useless if either
+// - 0 < adv
+// - the assigned component is dummy
+bool is_useless(const node &n, const vector<vector<int>> &adv, unsigned long c) {
+    return !between(n.column(), 0, c) || 0 <= adv[n.row()][n.column()];
 }
 
 template<typename OutputIterator>
@@ -127,9 +154,11 @@ int min_time(istream &in, OutputIterator who_what) {
 
     vector<vector<int>> clone(adv);
 
-    const auto min_adv = make_positive(clone);
+    make_positive(clone);
 
-    make_columns_great_again(clone, abs(min_adv));
+    // if there are more soldiers than components
+    // => adds dummy components with adv = 0
+    const bool add_dummy = make_columns_great_again(clone, 0);
 
     vector<node> indexes;
     hungarian(clone, back_inserter(indexes));
@@ -137,51 +166,34 @@ int min_time(istream &in, OutputIterator who_what) {
     // sort indexes by component
     sort(begin(indexes), end(indexes), compare_columns);
 
-    // remove non-existent components
-    indexes.resize(c);
+    // remove dummy components
+    if (add_dummy)
+        indexes.resize(c);
 
-    // init minimums
-    int min_soldier = -1;
-    int min_chosen_adv = INT_MAX;
+    const auto min_pair = find_min_soldier(indexes, adv, c);
+    const auto min_soldier = min_pair.first;
+    const auto min_chosen_adv = min_pair.second;
 
-    // find minimums
-    for (const auto &node : indexes) {
-        const auto soldier = node.row();
-        const auto component = node.column();
+    const auto target_component = accumulate(begin(dist_tc), end(dist_tc), 0) * 2;
 
-        if (!between(soldier, 0, s)) continue;
-
-        const int candidate_adv = adv[soldier][component];
-
-        if (candidate_adv < min_chosen_adv) {
-            min_chosen_adv = candidate_adv;
-            min_soldier = soldier;
-        }
+    // all the soldiers are useless
+    if (min_chosen_adv >= 0) {
+        fill_n(who_what, dist_tc.size(), 0);
+        return target_component + min_chosen_adv;
     }
 
-    // total_adv is the sum of the advantages of the not useless soldier
+    // total_adv is the sum of the advantages of the non-useless soldiers
     int total_adv = 0;
 
-    vector<int> who_what_final;
-
-    // change every useless soldier to the min_soldier
-    // a soldier is useless <=> is not the min_soldier && (the adv >= 0 || does not belong to the matrix)
-    for (const auto &index : indexes) {
-        const auto soldier = index.row();
-        const auto component = index.column();
-
-        if (!between(soldier, 0, s) || adv[soldier][component] >= 0) {
-            who_what_final.push_back(min_soldier);
-            continue;
-        }
-
-        who_what_final.push_back(soldier);
-        total_adv += adv[soldier][component];
+    for (const auto &n : indexes) {
+        if (is_useless(n, adv, c)) continue;
+        total_adv += adv[n.row()][n.column()];
     }
 
-    total_adv = min_chosen_adv >= 0 ? min_chosen_adv : total_adv;
-    copy(begin(who_what_final), end(who_what_final), who_what);
-    return accumulate(begin(dist_tc), end(dist_tc), 0) * 2 + total_adv;
+    const int components_not_taken = c - indexes.size();
+    transform(begin(indexes), end(indexes), who_what, [&](const node &n) { return is_useless(n, adv, c) ? min_soldier : n.row(); });
+    fill_n(who_what, max(0, components_not_taken), min_soldier);
+    return target_component + total_adv;
 }
 
 #endif //WAR_HPP
