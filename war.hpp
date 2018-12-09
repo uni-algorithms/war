@@ -149,10 +149,17 @@ int min_time(istream &in, OutputIterator out) {
     }
 
     bool exists_useless_soldier = false;
+    int min_soldier = -1;
+    int min_advantage = INT_MAX;
     for (const auto &a : as) {
         const int advantage = adv[a.row()][a.column()];
         if (advantage > 0) {
             exists_useless_soldier = true;
+        }
+
+        if (advantage < min_advantage) {
+            min_soldier = a.row();
+            min_advantage = advantage;
         }
     }
 
@@ -161,15 +168,10 @@ int min_time(istream &in, OutputIterator out) {
         // there is no need to find the min_soldier
 
         int total_adv = 0;
+        vector<int> what_who(c, 0);
         for (const auto &a : as) {
             const int advantage = adv[a.row()][a.column()];
             total_adv += advantage;
-        }
-
-        int min_soldier = 0;
-
-        vector<int> what_who(c, min_soldier);
-        for (const auto &a : as) {
             what_who[a.column()] = a.row();
         }
 
@@ -181,24 +183,13 @@ int min_time(istream &in, OutputIterator out) {
     // find the min_soldier
     // if min_soldier is useless -> all soldiers are useless
 
-    int min_soldier = -1;
-    int min_advantage = INT_MAX;
-    for (const auto &a : as) {
-        const int advantage = adv[a.row()][a.column()];
-        if (advantage < min_advantage) {
-            min_soldier = a.row();
-            min_advantage = advantage;
-        }
-    }
-
     bool exists_useful_soldier = min_advantage < 0;
 
     if (!exists_useful_soldier) {
         // all soldiers are useless
         // then the total_adv = to the min(adv)
 
-        vector<int> what_who(c, min_max.first.second);
-        copy(begin(what_who), end(what_who), out);
+        fill_n(out, c, min_max.first.second);
         return target_component + min_max.first.first;
     }
 
@@ -206,17 +197,12 @@ int min_time(istream &in, OutputIterator out) {
     // skip all the useless soldiers
 
     int total_adv = 0;
+    vector<int> what_who(c, min_soldier);
     for (const auto &a : as) {
         if (adv[a.row()][a.column()] >= 0) continue;
 
         const int advantage = adv[a.row()][a.column()];
         total_adv += advantage;
-    }
-
-    vector<int> what_who(c, min_soldier);
-    for (const auto &a : as) {
-        if (adv[a.row()][a.column()] >= 0) continue;
-
         what_who[a.column()] = a.row();
     }
     copy(begin(what_who), end(what_who), out);
