@@ -13,28 +13,28 @@
 
 using namespace std;
 
-class node {
+class assignment {
     int r, c;
 
 public:
-    node() {}
+    assignment() {}
 
-    node(int r, int c) : r(r), c(c) {}
+    assignment(int r, int c) : r(r), c(c) {}
 
     int row() const { return r; }
 
     int column() const { return c; }
 
-    bool operator==(const node &rhs) const {
+    bool operator==(const assignment &rhs) const {
         return r == rhs.r &&
                c == rhs.c;
     }
 
-    bool operator!=(const node &rhs) const {
+    bool operator!=(const assignment &rhs) const {
         return !(rhs == *this);
     }
 
-    bool operator<(const node &rhs) const {
+    bool operator<(const assignment &rhs) const {
         if (r < rhs.r)
             return true;
         if (rhs.r < r)
@@ -42,30 +42,30 @@ public:
         return c < rhs.c;
     }
 
-    bool operator>(const node &rhs) const {
+    bool operator>(const assignment &rhs) const {
         return rhs < *this;
     }
 
-    bool operator<=(const node &rhs) const {
+    bool operator<=(const assignment &rhs) const {
         return !(rhs < *this);
     }
 
-    bool operator>=(const node &rhs) const {
+    bool operator>=(const assignment &rhs) const {
         return !(*this < rhs);
     }
 
-    friend ostream &operator<<(ostream &os, const node &n) {
+    friend ostream &operator<<(ostream &os, const assignment &n) {
         os << "[" << n.r << ", " << n.c << "]";
         return os;
     }
 };
 
 template<typename OutputIterator>
-void stars_unstars(const node &prime, vector<node> &primes, vector<node> &stars, OutputIterator to_stars,
+void stars_unstars(const assignment &prime, vector<assignment> &primes, vector<assignment> &stars, OutputIterator to_stars,
                    OutputIterator to_unstars) {
 
     const auto star_it = find_if(begin(stars), end(stars),
-                                 [&prime](const node &star) { return prime.column() == star.column(); });
+                                 [&prime](const assignment &star) { return prime.column() == star.column(); });
 
     if (star_it == end(stars)) {
         return;
@@ -73,7 +73,7 @@ void stars_unstars(const node &prime, vector<node> &primes, vector<node> &stars,
 
     const auto star = *star_it;
     const auto to_star = *find_if(begin(primes), end(primes),
-                                  [&star](const node &prime) { return star.row() == prime.row(); });
+                                  [&star](const assignment &prime) { return star.row() == prime.row(); });
 
     to_stars++ = to_star;
     to_unstars++ = star;
@@ -81,10 +81,10 @@ void stars_unstars(const node &prime, vector<node> &primes, vector<node> &stars,
     stars_unstars(to_star, primes, stars, to_stars, to_unstars);
 }
 
-void unstars(const node &prime, vector<node> &primes, vector<node> &stars, vector<bool> &cover_row) {
+void unstars(const assignment &prime, vector<assignment> &primes, vector<assignment> &stars, vector<bool> &cover_row) {
 
-    vector<node> to_stars = {prime};
-    vector<node> to_unstars;
+    vector<assignment> to_stars = {prime};
+    vector<assignment> to_unstars;
 
     stars_unstars(prime, primes, stars, back_inserter(to_stars), back_inserter(to_unstars));
 
@@ -96,7 +96,7 @@ void unstars(const node &prime, vector<node> &primes, vector<node> &stars, vecto
         sort(to_unstars.begin(), to_unstars.end());
         sort(stars.begin(), stars.end());
 
-        vector<node> diff;
+        vector<assignment> diff;
         set_difference(
                 begin(stars), end(stars),
                 begin(to_unstars), end(to_unstars),
@@ -112,7 +112,7 @@ void unstars(const node &prime, vector<node> &primes, vector<node> &stars, vecto
 }
 
 bool
-find_primes(vector<vector<int>> &rows, unsigned long nr, unsigned long nc, vector<node> &stars, vector<node> &primes, vector<bool> &cover_col,
+find_primes(vector<vector<int>> &rows, unsigned long nr, unsigned long nc, vector<assignment> &stars, vector<assignment> &primes, vector<bool> &cover_col,
             vector<bool> &cover_row) {
 
     for (int r = 0; r < nr; ++r) {
@@ -121,9 +121,9 @@ find_primes(vector<vector<int>> &rows, unsigned long nr, unsigned long nc, vecto
             if (cover_col[c]) continue;
             if (rows[r][c] != 0) continue;
 
-            const node prime = {r, c};
+            const assignment prime = {r, c};
             primes.push_back(prime);
-            const auto star_it = find_if(begin(stars), end(stars), [&r](const node &star) { return r == star.row(); });
+            const auto star_it = find_if(begin(stars), end(stars), [&r](const assignment &star) { return r == star.row(); });
 
             if (star_it == end(stars)) {
                 unstars(prime, primes, stars, cover_row);
@@ -165,7 +165,7 @@ void find_stars(vector<vector<int>> &rows, unsigned long nr, unsigned long nc, O
 }
 
 bool
-is_done(vector<vector<int>> &rows, unsigned long nr, unsigned long nc, vector<node> &stars, vector<bool> &cover_col) {
+is_done(vector<vector<int>> &rows, unsigned long nr, unsigned long nc, vector<assignment> &stars, vector<bool> &cover_col) {
 
     for (const auto &star : stars) {
         cover_col[star.column()] = true;
@@ -208,8 +208,8 @@ void hungarian(vector<vector<int>> &rows, OutputIterator out) {
 
     vector<bool> cover_row(nr, false);
     vector<bool> cover_col(nc, false);
-    vector<node> stars;
-    vector<node> primes;
+    vector<assignment> stars;
+    vector<assignment> primes;
 
     minimize_rows(rows, nc);
     find_stars(rows, nr, nc, back_inserter(stars));
