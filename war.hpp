@@ -23,19 +23,33 @@ bool make_columns_great_again(vector<vector<int>> &rows, const int value) {
     return nc < nr;
 }
 
-int make_positive(vector<vector<int>> &rows) {
+pair<pair<int, int>, pair<int, int>> make_positive(vector<vector<int>> &rows) {
     int minimum = *begin(*begin(rows));
-    for (const auto &row : rows) {
-        minimum = min(minimum, *min_element(begin(row), end(row)));
+    int minimum_s = 0;
+    int maximum = *begin(*begin(rows));
+    int maximum_s = 0;
+    for (int s = 0; s < rows.size(); ++s) {
+        for (const auto &el : rows[s]) {
+            if (el < minimum) {
+                minimum = el;
+                minimum_s = s;
+            }
+
+            if (el > maximum) {
+                maximum = el;
+                maximum_s = s;
+            }
+        }
     }
 
     if (minimum < 0) {
         for (auto &row : rows) {
-            transform(begin(row), end(row), begin(row), [&minimum](const int &el) { return el - minimum; });
+            transform(begin(row), end(row), begin(row), [&minimum, &maximum](const int &el) { return abs(minimum) + (el > 0 ? maximum : el); });
+            //transform(begin(row), end(row), begin(row), [&minimum](const int &el) { return el - minimum; });
         }
     }
 
-    return minimum;
+    return {{minimum, minimum_s}, {maximum, maximum_s}};
 }
 
 template<typename InputIterator, typename OutputIterator>
@@ -52,14 +66,6 @@ void pick_coordinates(istream &in, unsigned long n, OutputIterator out) {
         in >> x >> y;
         out++ = {x, y};
     }
-}
-
-template<typename OutputIterator>
-int one_soldier_solver(const vector<int> &dist_tc, const vector<vector<int>> &adv, OutputIterator who_what) {
-    fill_n(who_what, dist_tc.size(), 0);
-    const vector<int> dist_sc = *begin(adv);
-    const auto min = *min_element(begin(dist_sc), end(dist_sc));
-    return accumulate(begin(dist_tc), end(dist_tc), 0) * 2 + min;
 }
 
 template<typename OutputIterator>
@@ -99,41 +105,8 @@ void distances_from_stream(istream &in, unsigned long c, unsigned long s, Output
     }
 }
 
-bool between(const long &x, const long &first, const long &last) {
-    return first <= x && x < last;
-}
-
 bool compare_columns(const assignment &a, const assignment &b) {
     return a.column() < b.column();
-}
-
-pair<int, int> find_min_soldier(const vector<assignment> &indexes, const vector<vector<int>> &adv, unsigned long c) {
-    int min_soldier = -1;
-    int min_chosen_adv = INT_MAX;
-
-    // find min_soldier
-    for (const auto &node : indexes) {
-        const auto soldier = node.row();
-        const auto component = node.column();
-
-        if (!between(component, 0, c)) continue;
-
-        const int candidate_adv = adv[soldier][component];
-
-        if (candidate_adv < min_chosen_adv) {
-            min_chosen_adv = candidate_adv;
-            min_soldier = soldier;
-        }
-    }
-
-    return {min_soldier, min_chosen_adv};
-}
-
-// a soldier is useless if either
-// - 0 < adv
-// - the assigned component is dummy
-bool is_useless(const assignment &n, const vector<vector<int>> &adv, unsigned long c) {
-    return !between(n.column(), 0, c) || 0 <= adv[n.row()][n.column()];
 }
 
 template<typename OutputIterator>
@@ -152,24 +125,19 @@ int min_time(istream &in, OutputIterator out) {
     vector<vector<int>> clone(adv);
     vector<assignment> as;
 
+    const auto min_max = make_positive(clone);
+
     if (c >= s) {
         // c > s
         // c == s
         // there are some components which will be taken from the target
         // there is no need to add dummy components
-
-        make_positive(clone);
         hungarian(clone, back_inserter(as));
     } else {
         // c < s
         // some soldiers will not be taken
-        // add dummy components with 0 adv (necessary for the correct work of the HA)
-
-        const int fattore = make_positive(clone);
-
-        // add dummies
-        make_columns_great_again(clone, abs(fattore));
-
+        // add dummy components with max adv (necessary for the correct work of the HA)
+        make_columns_great_again(clone, abs(min_max.second.first));
 
         hungarian(clone, back_inserter(as));
 
@@ -228,28 +196,28 @@ int min_time(istream &in, OutputIterator out) {
 
     if (!exists_useful_soldier) {
         // all soldiers are useless
-        // there is no need to calculate the total_adv
+        // then the total_adv = to the min(adv)
 
-        vector<int> what_who(c, min_soldier);
+        vector<int> what_who(c, min_max.first.second);
         copy(begin(what_who), end(what_who), out);
-        return target_component + min_advantage;
+        return target_component + min_max.first.first;
     }
 
     // there are some useful soldiers
-    // erase all the useless soldiers
-
-    as.erase(remove_if(begin(as), end(as), [&adv](const assignment &a) { return adv[a.row()][a.column()] >= 0; }));
-
-    // now as contains only useful soldiers
+    // skip all the useless soldiers
 
     int total_adv = 0;
     for (const auto &a : as) {
+        if (adv[a.row()][a.column()] >= 0) continue;
+
         const int advantage = adv[a.row()][a.column()];
         total_adv += advantage;
     }
 
     vector<int> what_who(c, min_soldier);
     for (const auto &a : as) {
+        if (adv[a.row()][a.column()] >= 0) continue;
+
         what_who[a.column()] = a.row();
     }
     copy(begin(what_who), end(what_who), out);

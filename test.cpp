@@ -58,18 +58,18 @@ TEST_CASE("make_positive") {
                                     {3, -2},
                                     {7, 7}};
 
-    vector<vector<int>> positive = {{3, 4},
-                                    {5, 0},
+    vector<vector<int>> positive = {{9, 9},
+                                    {9, 0},
                                     {9, 9}};
 
-    vector<vector<int>> expected = {{3, 4},
-                                    {5, 0},
+    vector<vector<int>> expected = {{9, 9},
+                                    {9, 0},
                                     {9, 9}};
 
-    REQUIRE(make_positive(negative) == -2);
+    REQUIRE(make_positive(negative).first.first == -2);
     REQUIRE(negative == expected);
 
-    REQUIRE(make_positive(positive) == 0);
+    REQUIRE(make_positive(positive).first.first == 0);
     REQUIRE(positive == expected);
 }
 
@@ -132,7 +132,7 @@ TEST_CASE("hungarian easy") {
     }
 }
 
-TEST_CASE("all useless-soldiers") {
+TEST_CASE("all useless soldiers") {
     vector<pair<std::string, pair<int, vector<int>>>> tests = {
             {" 3  2\n"
              "-3  2\n"
@@ -140,7 +140,7 @@ TEST_CASE("all useless-soldiers") {
              "-3 -2\n"
              " 3  0\n"
              " 3  2\n"
-             " 0  0", {27, {0, 0, 0}}},
+             " 0  0", {27, {1, 1, 1}}},
     };
 
     for (int i = 0; i < tests.size(); ++i) {
@@ -165,7 +165,7 @@ TEST_CASE("more soldiers") {
              "11 8\n"
              " 2 5\n"
              " 7 1\n"
-             " 5 2",  {49, {1, 1, 1}}},
+             " 5 2",  {49, {0, 0, 1}}},
             {" 3  4\n"
              "-2 -4\n"
              " 9  2\n"
@@ -181,7 +181,7 @@ TEST_CASE("more soldiers") {
              "6 2\n"
              "1 6\n"
              "6 1\n"
-             "1 1",   {16, {0, 1, 1}}},
+             "1 1",   {16, {0, 0, 1}}},
             {" 4  4\n"
              " 8  5\n"
              "-9  1\n"
