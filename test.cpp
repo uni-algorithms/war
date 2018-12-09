@@ -132,7 +132,7 @@ TEST_CASE("hungarian easy") {
     }
 }
 
-TEST_CASE("invetend scenarios") {
+TEST_CASE("invented scenarios") {
 
     vector<pair<std::string, pair<int, vector<int>>>> tests = {
             {" 3 2\n"
@@ -209,9 +209,9 @@ TEST_CASE("provided tests") {
             {"input14.txt", 644362},
             {"input15.txt", 1600000},
             {"input16.txt", 303960},
-            {"input17.txt", 605546},
-          //{"input18.txt", 1276961},
-          //{"input19.txt", 1720243},
+            //{"input17.txt", 605546},
+            //{"input18.txt", 1276961},
+            //{"input19.txt", 1720243},
     };
 
     for (const auto &test : tests) {
