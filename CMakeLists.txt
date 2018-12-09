@@ -33,3 +33,10 @@ configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/input.txt
         ${CMAKE_CURRENT_BINARY_DIR} COPYONLY
 )
+
+foreach(N RANGE 0 19)
+    configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/input${N}.txt
+            ${CMAKE_CURRENT_BINARY_DIR} COPYONLY
+    )
+endforeach()

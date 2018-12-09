@@ -132,31 +132,7 @@ TEST_CASE("hungarian easy") {
     }
 }
 
-TEST_CASE("all useless soldiers") {
-    vector<pair<std::string, pair<int, vector<int>>>> tests = {
-            {" 3  2\n"
-             "-3  2\n"
-             "-3  0\n"
-             "-3 -2\n"
-             " 3  0\n"
-             " 3  2\n"
-             " 0  0", {27, {1, 1, 1}}},
-    };
-
-    for (int i = 0; i < tests.size(); ++i) {
-        const auto test = tests[i];
-        WHEN ("solve : " + to_string(i)) {
-            stringstream in(test.first);
-            vector<int> actual_who_what;
-            const int actual_min = min_time(in, back_inserter(actual_who_what));
-
-            REQUIRE (actual_min == test.second.first);
-            REQUIRE (actual_who_what == test.second.second);
-        }
-    }
-}
-
-TEST_CASE("more soldiers") {
+TEST_CASE("invetend scenarios") {
 
     vector<pair<std::string, pair<int, vector<int>>>> tests = {
             {" 3 2\n"
@@ -192,6 +168,13 @@ TEST_CASE("more soldiers") {
              " 6 -1\n"
              "-1 -8\n"
              "-7 -1", {73, {1, 1, 2, 0}}},
+            {" 3  2\n"
+             "-3  2\n"
+             "-3  0\n"
+             "-3 -2\n"
+             " 3  0\n"
+             " 3  2\n"
+             " 0  0", {27, {1, 1, 1}}},
     };
 
     for (int i = 0; i < tests.size(); ++i) {
@@ -203,6 +186,42 @@ TEST_CASE("more soldiers") {
 
             REQUIRE (actual_min == test.second.first);
             REQUIRE (actual_who_what == test.second.second);
+        }
+    }
+}
+
+TEST_CASE("provided tests") {
+    vector<pair<std::string, int>> tests = {
+            {"input0.txt",  10928},
+            {"input1.txt",  34620},
+            {"input2.txt",  103040},
+            {"input3.txt",  171711},
+            {"input4.txt",  228478},
+            {"input5.txt",  416688},
+            {"input6.txt",  850720},
+            {"input7.txt",  61209},
+            {"input8.txt",  220809},
+            {"input9.txt",  192942},
+            {"input10.txt", 366158},
+            {"input11.txt", 16876},
+            {"input12.txt", 64240},
+            {"input13.txt", 198780},
+            {"input14.txt", 644362},
+            {"input15.txt", 1600000},
+            {"input16.txt", 303960},
+            {"input17.txt", 605546},
+          //{"input18.txt", 1276961},
+          //{"input19.txt", 1720243},
+    };
+
+    for (const auto &test : tests) {
+        WHEN (test.first) {
+            ifstream input(test.first);
+            assert(input);
+            vector<int> actual_who_what;
+            const int actual_min = min_time(input, back_inserter(actual_who_what));
+            input.close();
+            REQUIRE (actual_min == test.second);
         }
     }
 }
