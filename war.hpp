@@ -44,8 +44,7 @@ pair<pair<int, int>, pair<int, int>> make_positive(vector<vector<int>> &rows) {
 
     if (minimum < 0) {
         for (auto &row : rows) {
-            transform(begin(row), end(row), begin(row), [&minimum, &maximum](const int &el) { return abs(minimum) + (el > 0 ? maximum : el); });
-            //transform(begin(row), end(row), begin(row), [&minimum](const int &el) { return el - minimum; });
+            transform(begin(row), end(row), begin(row), [&minimum, &maximum](const int &el) { return abs(minimum) + (el > 0 ? 0 : el); });
         }
     }
 
