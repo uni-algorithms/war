@@ -9,7 +9,7 @@ struct coordinates {
     int x, y;
 };
 
-bool make_columns_great_again(vector<vector<int>> &rows, const int value) {
+bool make_square(vector<vector<int>> &rows, const int value) {
     const auto nr = rows.size();
     const auto nc = begin(rows)->size();
 
@@ -17,6 +17,14 @@ bool make_columns_great_again(vector<vector<int>> &rows, const int value) {
         const auto diff = nr - nc;
         for (auto &row : rows) {
             fill_n(back_inserter(row), diff, value);
+        }
+    }
+
+    if (nr < nc) {
+        const auto diff = nc - nr;
+        const vector<int> empty(nc, value);
+        for (int i = 0; i < diff; ++i) {
+            rows.push_back(empty);
         }
     }
 
@@ -44,7 +52,7 @@ pair<pair<int, int>, pair<int, int>> make_positive(vector<vector<int>> &rows) {
 
     if (minimum < 0) {
         for (auto &row : rows) {
-            transform(begin(row), end(row), begin(row), [&minimum, &maximum](const int &el) { return abs(minimum) + (el > 0 ? 0 : el); });
+            transform(begin(row), end(row), begin(row), [&minimum, &maximum](const int &el) { return abs(minimum) + min(0, el); });
         }
     }
 
@@ -108,6 +116,10 @@ bool compare_columns(const assignment &a, const assignment &b) {
     return a.column() < b.column();
 }
 
+bool compare_rows(const assignment &a, const assignment &b) {
+    return a.row() < b.row();
+}
+
 template<typename OutputIterator>
 int min_time(istream &in, OutputIterator out) {
     unsigned long c;
@@ -126,17 +138,27 @@ int min_time(istream &in, OutputIterator out) {
 
     const auto min_max = make_positive(clone);
 
-    if (c >= s) {
+    if (c == s) {
+        hungarian(clone, back_inserter(as));
+    } else if (c > s) {
         // c > s
         // c == s
         // there are some components which will be taken from the target
-        // there is no need to add dummy components
+        make_square(clone, abs(min_max.second.first));
+
         hungarian(clone, back_inserter(as));
+
+        // sort indexes by soldier
+        // => all the dummy soldier will be at the end
+        sort(begin(as), end(as), compare_rows);
+
+        // remove dummy soldiers
+        as.resize(s);
     } else {
         // c < s
         // some soldiers will not be taken
         // add dummy components with max adv (necessary for the correct work of the HA)
-        make_columns_great_again(clone, abs(min_max.second.first));
+        make_square(clone, abs(min_max.second.first));
 
         hungarian(clone, back_inserter(as));
 
